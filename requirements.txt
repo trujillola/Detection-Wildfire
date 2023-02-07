@@ -1,0 +1,9 @@
+tensorflow
+codecarbon
+pandas
+datetime
+time
+os
+matplotlib.pyplot
+csv
+PIL
