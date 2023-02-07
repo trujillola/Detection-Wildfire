@@ -61,7 +61,7 @@ class DataLoader :
             color_mode='rgb', 
             batch_size=32, 
             image_size=(224, 224), 
-            shuffle=True, 
+            shuffle=False, 
             seed=None, 
             validation_split=None , 
             subset=None, 

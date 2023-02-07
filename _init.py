@@ -16,14 +16,14 @@ if __name__ == "__main__":
     # model_FT.evaluate()
 
     # --------------- Train model CNN from scratch ---------------- #
-    # model_CNN = Model_CNN(model_name = "CNN")
-    # model_CNN.train(epochs=50,patience=10)
-    # model_CNN.save()
+    model_CNN = Model_CNN(model_name = "CNN-50-10")
+    model_CNN.train(epochs=50,patience=10)
+    model_CNN.save()
 
     # --------------- Evaluate model fine tuning ResNet50 ---------------- #
-    model_CNN = Model_CNN(model_name = "CNN")
-    model_CNN.load()
-    visualkeras.layered_view(model_CNN._model, to_file='results/visualisation/Architecture_model_CNN.png', legend=True)
-    model_CNN.evaluate()
-    model_CNN.infos_model()
+    # model_CNN = Model_CNN(model_name = "CNN")
+    # model_CNN.load()
+    # visualkeras.layered_view(model_CNN._model, to_file='results/visualisation/Architecture_model_CNN.png', legend=True)
+    # model_CNN.evaluate()
+    # model_CNN.infos_model()
 
