@@ -5,8 +5,10 @@ sys.path.append("./")
 import os
 import time
 import datetime
+from datetime import timedelta
 
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
 import matplotlib.pyplot as plt
@@ -32,7 +34,9 @@ from PIL import Image
 class Model:
     _model = None
     _model_name : str = "Base Model"
-    _emission : float = 0
+    _emission_train : float = 0
+    _emission_test : float = 0
+    _time_train : str = ""
     _eval_infos = None
     _data_loader = dl.DataLoader()
 
@@ -44,14 +48,6 @@ class Model:
         self._model_name = model_name
         
 
-#usefull ?
-    # def _build_model(self,load=False):
-    #     print( "Building model parent")
-    #     if load:
-    #         return self.load()
-    #     else:
-    #         raise NotImplementedError
-
     """
         This function clean the logs for tensorboard
     """
@@ -60,7 +56,6 @@ class Model:
             os.rmtree('./logs')
         except:
             pass
-
 
     """
         This function show the learning rate in a plot
@@ -106,8 +101,7 @@ class Model:
         #use dataloader here
         train_gen = self._data_loader.data_retriever("train")
         dev_gen = self._data_loader.data_retriever("dev")
-
-
+     
         #tensorboard
         log_dir = "./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -115,10 +109,11 @@ class Model:
         early_stopping = tf.keras.callbacks.EarlyStopping(patience=patience)
 
         #tracking emissions
-        tracker = EmissionsTracker()
-        tracker.start()
+        # tracker = EmissionsTracker()
+        # tracker.start()
 
         #model training
+        start = time.time()
         hist = self._model.fit( 
             train_gen,
             epochs=epochs,
@@ -126,86 +121,15 @@ class Model:
             validation_data=dev_gen,
             verbose=1,
             callbacks=[early_stopping])#,tensorboard_callback])
+        self._time_train = str(timedelta(seconds=time.time()-start))
 
-        self._emission  = tracker.stop()
+        # self._emission_train  = tracker.stop()
         title = f"{self._model_name} - Learning curves"
         self.plot_learning_curves(hist, title)
-        print(f"Emissions: {self._emission} kgCO2e")
+        # print(f"Emissions: {self._emission_train} kgCO2e")
 
         #see model in tensorboard
         # tensorboard --logdir ./logs/fit
-
-
-    """
-        This function clean the result folder and create the csv files for the predictions and the evaluation and add the header.
-    """
-    def clean_result(self):
-        if not os.path.exists('./results'):
-            os.makedirs('./results')
-            try:
-                with open('./result/predictions.csv', 'w') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(['image_name','prediction','ground_truth'])
-            except:
-                print("Error with predictions file")
-            try:
-                with open('./results/result_evaluation.csv', 'w') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission'])
-            except:
-                print("Error with result_evaluation file")
-
-    """
-        This function evaluate the model and save the results in 2 csv file : in prediction.csv where the predictions are record and in result_evaluation.csv where the results of the evaluation are record.
-        Function variables:
-            LIMIT : float : si la probabilité que ce n'est pas un feu est supérieur à LIMIT alors on considère qu'il n'y a pas de feu
-    """
-    def evaluate(self,LIMIT=0.02):
-        self.clean_result()
-        predictions = []
-        true_negative : int = 0
-        false_negative : int = 0
-        true_positive : int = 0
-        false_positive : int = 0
-        # Get the test data
-        test_gen = self._data_loader.data_retriever("test")
-        #For each test image        
-        image_id = 0
-        for image, ground_truth in test_gen:
-            # Get the prediction
-            output = self.predict(image)
-            for i in range(len(ground_truth)):
-                predictions.append([image_id, output[i], (ground_truth[i]).numpy()])
-                image_id += 1
-                # Si la proba qu'il n'y ait pas de feu est assez haute, on est assuré qu'il n'y en a pas
-                if output[i][0]>LIMIT:
-                    output[i]=[1,0]
-                else:
-                    output[i]=[0,1]
-                # On compare la prédiction avec le ground truth pour incrémenter la matrice de confusion
-                if output[i][0] == ground_truth[i][0]:
-                    if ground_truth[i][1] == 0:
-                        true_positive += 1
-                    else:
-                        true_negative += 1
-                else:
-                    if ground_truth[i][1] == 0:
-                        false_negative += 1
-                    else:
-                        false_positive+= 1
-                
-        accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-        self._eval_infos = [true_positive, false_positive, true_negative, false_negative, accuracy]
-        if not os.path.exists('./results'):
-            os.makedirs('./results')
-        with open('./results/predictions.csv', 'a') as f:
-            writer = csv.writer(f)
-            for prediction in predictions:
-                writer.writerow(prediction)
-        with open('./results/result_evaluation.csv', 'a') as f:
-            writer = csv.writer(f)
-            writer.writerow([self._model_name, self._eval_infos[0], self._eval_infos[1], self._eval_infos[2], self._eval_infos[3], self._eval_infos[4], self._emission])
-                
 
     """
         This function predict the class of an image.
@@ -230,10 +154,10 @@ class Model:
         if not os.path.exists("./saved_models/saved_models_results.csv"):
             with open("./saved_models/saved_models_results.csv", 'w') as f:
                 writer = csv.writer(f)
-                writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission(kgCO2e', 'date'])
+                writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission(kgCO2e', 'date', 'training time'])
         with open("./saved_models/saved_models_results.csv", 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([self._model_name, self._eval_infos[0],self._eval_infos[1],self._eval_infos[2],self._eval_infos[3], self._eval_infos[4], self._emission, now])
+            writer.writerow([self._model_name, self._eval_infos[0],self._eval_infos[1],self._eval_infos[2],self._eval_infos[3], self._eval_infos[4], self._emission_train, now])
 
 
     """
@@ -273,24 +197,134 @@ class Model:
     """
     def infos_model(self):
         self._model.summary()
-        if self._emission != 0:
-            print("Emissions during training: {} kgCO2e".format(self._emission))
+        if self._emission_train != 0:
+            print("Emissions during training: {} kgCO2e".format(self._emission_train))
         if self._eval_infos is not None:
             print("Evaluation infos: \nTrue positive: {}\nFalse positive: {}\nTrue negative: {}\nFalse negative: {}\nAccuracy:{}".format(self._eval_infos[0], self._eval_infos[1], self._eval_infos[2], self._eval_infos[3], self._eval_infos[4]))
         # !tensorboard --logdir ./logs/fit
 
+
+# -------------------- About evaluation --------------------
+
+    """
+        This function clean the result folder and create the csv files for the predictions and the evaluation and add the header.
+    """
+    def clean_result_init(self):
+        if os.path.exists('./results/predictions_'+self._model_name+'.csv'):
+            os.remove('./results/predictions_'+self._model_name+'.csv')
+        with open('./results/predictions_'+self._model_name+'.csv', 'w+') as f:
+            writer = csv.writer(f)
+            writer.writerow(['image_path','prediction','ground_truth', 'predicted_output'])
+        if not os.path.exists('./results/result_evaluation.csv'):
+            with open('./results/result_evaluation.csv', 'w+') as f:
+                writer = csv.writer(f)
+                writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission'])
+
+
+    """
+        Rule : if the probability that there is no fire is lower than LIMIT then we consider that there could be a fire
+        Returns True if the rule indicates that there could be a fire
+    """
+    def no_fire_low(self,no_fire, LIMIT=0.9):
+        if no_fire < LIMIT:
+            return True
+        else:
+            return False
+
+    """
+        Rule : if the probability that there is a fire is upper than LIMIT then we consider that there could be a fire
+        Returns True if the rule indicates that there could be a fire
+    """
+    def fire_high(self,fire, LIMIT=0.5):
+        if fire > LIMIT:
+            return True
+        else:
+            return False
+
+    """
+        Rule : count the number of time the rule indicates that there could be a fire 
+                2 -> fire for sure
+                1 -> maybe fire
+                0 -> no fire
+        Returns the prediction array according to the rules
+    """
+    def apply_rules(self, fire, no_fire):
+        if self.no_fire_low(no_fire):
+            return [1,0]
+        else :
+            return [0,1]
     
+    """
+        This function evaluate the model and save the results in 2 csv file : in prediction.csv where the predictions are record and in result_evaluation.csv where the results of the evaluation are record.
+        Function variables:
+            LIMIT : float : si la probabilité que ce n'est pas un feu est supérieur à LIMIT alors on considère qu'il n'y a pas de feu
+    """
+    def evaluate(self):
+        #tracking emissions
+        # tracker = EmissionsTracker()
+        # tracker.start()
 
-# """
-#     Main function
-# """
-# if __name__ == "__main__":
-#     model = Model("base_model")
-#     model.train("dataset/data/annotations/train.csv", "data/annotations/dev.csv")
-#     model.infos_model()
-#     model.evaluate("dataset/data/annotations/test.csv")
-#     model.save()
+        self.clean_result_init()
 
+        predictions = []
+        true_negative : int = 0
+        false_negative : int = 0
+        true_positive : int = 0
+        false_positive : int = 0
 
+        # Get the test data
+        test_gen = self._data_loader.data_retriever("test")
+        # Get the image paths
+        image_paths = test_gen.file_paths
+
+        # Keep track of the batch id        
+        batch_position = 0
+        # For each batch of images
+        for image, ground_truth in test_gen:
+
+            # Get the prediction for the batch
+            output = self.predict(image)
+
+            # For each image of the batch
+            for i in range(0,len(ground_truth)):
+             
+                real_output = output[i].copy()
+
+                # Apply decision rules
+                fire = output[i][0]
+                no_fire = output[i][1]
+                output[i] = self.apply_rules(fire, no_fire)
+
+                # Count the number of true positive, true negative, false positive and false negative
+                if output[i][0] == ground_truth[i][0]:
+                    if ground_truth[i][1] == 0:
+                        true_positive += 1
+                    else:
+                        true_negative += 1
+                else:
+                    if ground_truth[i][1] == 0:
+                        false_negative += 1
+                    else:
+                        false_positive+= 1
+
+                # Add prediction to the tracking list
+                predictions.append([image_paths[batch_position+i], output[i], (ground_truth[i]).numpy(), real_output])
+
+            batch_position += len(ground_truth)
+
+        # self._emission_test  = tracker.stop() 
+
+        accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+        self._eval_infos = [true_positive, false_positive, true_negative, false_negative, accuracy]
+        with open('./results/predictions_'+self._model_name+'.csv', 'a') as f:
+            writer = csv.writer(f)
+            for prediction in predictions:
+                writer.writerow(prediction)
+        with open('./results/result_evaluation.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow([self._model_name, self._eval_infos[0], self._eval_infos[1], self._eval_infos[2], self._eval_infos[3], self._eval_infos[4], self._emission_test])
+                
+
+   
     
 

@@ -16,7 +16,7 @@ class DataLoader :
         self.ANNOTATIONSDIR = os.path.join(self.DATADIR, "annotations")
         self.TRAINDIR = os.path.join(self.DATADIR, "images/train")
         self.TESTDIR  = os.path.join(self.DATADIR, "images/test")
-        self.DEVDIR = os.path.join(self.DATADIR, "images/dev")
+        # self.DEVDIR = os.path.join(self.DATADIR, "images/dev")
 
     """
         returns 1 if the image is a fire, 0 if not
@@ -53,22 +53,24 @@ class DataLoader :
     """
         generate a dataset from the images in the images_path directory
     """
-    def generate_dataset(self, images_path):
-        dataset = tf.keras.preprocessing.image_dataset_from_directory(os.path.join(images_path,"class"), 
+    def generate_dataset(self, images_path,subset, validation_split):
+        dataset = tf.keras.preprocessing.image_dataset_from_directory(
+            images_path, 
             labels="inferred", 
             label_mode='categorical',
-            class_names=["Fire","NotFire"],
+            class_names=["fire","no_fire"],
             color_mode='rgb', 
             batch_size=32, 
             image_size=(224, 224), 
             shuffle=True, 
-            seed=None, 
-            validation_split=None , 
-            subset=None, 
+            seed=42, 
+            validation_split=validation_split , 
+            subset=subset, 
             interpolation='bilinear', 
             follow_links=False, 
-            crop_to_aspect_ratio=False)
-        
+            crop_to_aspect_ratio=False
+        )
+        print("Dataset generated from directory : ",images_path,"...")
         #shutil.rmtree(os.path.join(images_path,"class"), ignore_errors=False, onerror=None)
         return dataset
 
@@ -78,18 +80,15 @@ class DataLoader :
         if dir == "train" : 
             data_path = self.TRAINDIR
             print("Start to retrieve data from directory : ",data_path,"...")
-            anno_path = os.path.join(self.ANNOTATIONSDIR, "annotations_train.csv") 
+            return self.generate_dataset(data_path, "training", 0.2)
         elif dir == "test" :
             data_path = self.TESTDIR
             print("Start to retrieve data from directory : ",data_path,"...")
-            anno_path = os.path.join(self.ANNOTATIONSDIR, "annotations_test.csv")
+            return self.generate_dataset(data_path,None, None)
         elif dir == "dev" :
+            data_path = self.TESTDIR
             print("Start to retrieve data from directory : ",data_path,"...")
-
-            data_path = self.DEVDIR
-            anno_path = os.path.join(self.ANNOTATIONSDIR, "annotations_dev.csv")
+            return self.generate_dataset(data_path, "training", 0.2)
         else :
             print("Error: wrong dir")
             raise ValueError
-        self.move_directory(data_path, anno_path)
-        return self.generate_dataset(data_path)
