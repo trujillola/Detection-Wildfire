@@ -5,6 +5,7 @@ sys.path.append("./")
 import os
 import time
 import datetime
+from datetime import timedelta
 
 import pandas as pd
 import numpy as np
@@ -35,6 +36,7 @@ class Model:
     _model_name : str = "Base Model"
     _emission_train : float = 0
     _emission_test : float = 0
+    _time_train : str = ""
     _eval_infos = None
     _data_loader = dl.DataLoader()
 
@@ -111,6 +113,7 @@ class Model:
         # tracker.start()
 
         #model training
+        start = time.time()
         hist = self._model.fit( 
             train_gen,
             epochs=epochs,
@@ -118,6 +121,7 @@ class Model:
             validation_data=dev_gen,
             verbose=1,
             callbacks=[early_stopping])#,tensorboard_callback])
+        self._time_train = str(timedelta(seconds=time.time()-start))
 
         # self._emission_train  = tracker.stop()
         title = f"{self._model_name} - Learning curves"
@@ -150,7 +154,7 @@ class Model:
         if not os.path.exists("./saved_models/saved_models_results.csv"):
             with open("./saved_models/saved_models_results.csv", 'w') as f:
                 writer = csv.writer(f)
-                writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission(kgCO2e', 'date'])
+                writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission(kgCO2e', 'date', 'training time'])
         with open("./saved_models/saved_models_results.csv", 'a') as f:
             writer = csv.writer(f)
             writer.writerow([self._model_name, self._eval_infos[0],self._eval_infos[1],self._eval_infos[2],self._eval_infos[3], self._eval_infos[4], self._emission_train, now])
@@ -201,9 +205,6 @@ class Model:
 
 
 # -------------------- About evaluation --------------------
-
-
-
 
     """
         This function clean the result folder and create the csv files for the predictions and the evaluation and add the header.

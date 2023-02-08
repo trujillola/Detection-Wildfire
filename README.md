@@ -81,7 +81,9 @@ Fire kaggle 1 : https://www.kaggle.com/datasets/phylake1337/fire-dataset?resourc
 Fire kaggle 2 : https://www.kaggle.com/datasets/brsdincer/wildfire-detection-image-data
 Fire Kaggle 3 : https://www.kaggle.com/datasets/alik05/forest-fire-dataset
 
-Diverse Dataset : https://drive.google.com/drive/folders/1HznoBFEd6yjaLFlSmkUGARwCUzzG4whq
+Diverse Dataset from paper : https://drive.google.com/drive/folders/1HznoBFEd6yjaLFlSmkUGARwCUzzG4whq
+
+The paper : https://arxiv.org/pdf/1905.11922.pdf
 
 ## Modèles
 
