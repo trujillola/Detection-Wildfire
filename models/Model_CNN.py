@@ -20,7 +20,7 @@ class Model_CNN(Model) :
         
 
     def _build_model(self,load=False):
-        print("Building model fine tuning")
+        print("Building CNN model")
         if load:
             return self.load()
         else:
@@ -37,7 +37,7 @@ class Model_CNN(Model) :
             model.add(Dense(512, activation="relu"))
             model.add(Dense(2, activation="sigmoid"))
 
-            print("Model fine tuning created")
+            print("CNN model created")
             model.compile(optimizer="adam",loss="binary_crossentropy", metrics=['accuracy'])
             model.summary()
             return model
