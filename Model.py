@@ -34,6 +34,7 @@ class Model:
     _model = None
     _model_name : str = "Base Model"
     _emission_train : float = 0
+    _emission_test : float = 0
     _eval_infos = None
     _data_loader = dl.DataLoader()
 
@@ -98,7 +99,7 @@ class Model:
         #use dataloader here
         train_gen = self._data_loader.data_retriever("train")
         dev_gen = self._data_loader.data_retriever("dev")
-
+     
         #tensorboard
         log_dir = "./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -106,8 +107,8 @@ class Model:
         early_stopping = tf.keras.callbacks.EarlyStopping(patience=patience)
 
         #tracking emissions
-        tracker = EmissionsTracker()
-        tracker.start()
+        # tracker = EmissionsTracker()
+        # tracker.start()
 
         #model training
         hist = self._model.fit( 
@@ -118,10 +119,10 @@ class Model:
             verbose=1,
             callbacks=[early_stopping])#,tensorboard_callback])
 
-        self._emission_train  = tracker.stop()
+        # self._emission_train  = tracker.stop()
         title = f"{self._model_name} - Learning curves"
         self.plot_learning_curves(hist, title)
-        print(f"Emissions: {self._emission_train} kgCO2e")
+        # print(f"Emissions: {self._emission_train} kgCO2e")
 
         #see model in tensorboard
         # tensorboard --logdir ./logs/fit
@@ -152,7 +153,7 @@ class Model:
                 writer.writerow(['model_name','true positive','false positive', 'true negative' , 'false negative' ,'accuracy', 'emission(kgCO2e', 'date'])
         with open("./saved_models/saved_models_results.csv", 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([self._model_name, self._eval_infos[0],self._eval_infos[1],self._eval_infos[2],self._eval_infos[3], self._eval_infos[4], self._emission, now])
+            writer.writerow([self._model_name, self._eval_infos[0],self._eval_infos[1],self._eval_infos[2],self._eval_infos[3], self._eval_infos[4], self._emission_train, now])
 
 
     """
@@ -259,8 +260,8 @@ class Model:
     """
     def evaluate(self):
         #tracking emissions
-        tracker = EmissionsTracker()
-        tracker.start()
+        # tracker = EmissionsTracker()
+        # tracker.start()
 
         self.clean_result_init()
 
@@ -282,7 +283,6 @@ class Model:
 
             # Get the prediction for the batch
             output = self.predict(image)
-            print(output)
 
             # For each image of the batch
             for i in range(0,len(ground_truth)):
@@ -311,7 +311,7 @@ class Model:
 
             batch_position += len(ground_truth)
 
-        self._emission_test  = tracker.stop() 
+        # self._emission_test  = tracker.stop() 
 
         accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
         self._eval_infos = [true_positive, false_positive, true_negative, false_negative, accuracy]

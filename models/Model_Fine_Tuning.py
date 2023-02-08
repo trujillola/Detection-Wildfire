@@ -14,7 +14,6 @@ class Model_FT_ResNet50(Model) :
         self.nb_layers_to_learn = kwargs.pop('nb_layers_to_learn')
         super().__init__(*args, **kwargs)
         self._model = self._build_model()
-        print(self._model_name)
         
 
     def _build_model(self,load=False):
