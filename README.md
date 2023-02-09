@@ -77,8 +77,11 @@ pip install visualkeras
 
 Sources : 
 Images CV : https://images.cv/download/forest_fire/948/CALL_FROM_SEARCH/%22forest_fire%22
+
 Fire kaggle 1 : https://www.kaggle.com/datasets/phylake1337/fire-dataset?resource=download
+
 Fire kaggle 2 : https://www.kaggle.com/datasets/brsdincer/wildfire-detection-image-data
+
 Fire Kaggle 3 : https://www.kaggle.com/datasets/alik05/forest-fire-dataset
 
 Diverse Dataset from paper : https://drive.google.com/drive/folders/1HznoBFEd6yjaLFlSmkUGARwCUzzG4whq
