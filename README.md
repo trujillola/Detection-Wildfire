@@ -71,11 +71,13 @@ nom_images , label (0 pour pas feu, 1 pour feu)
 ## Prerequis
 
 pip install codecarbon 
+    
 pip install visualkeras
 
 ## Dataset 
 
 Sources : 
+    
 Images CV : https://images.cv/download/forest_fire/948/CALL_FROM_SEARCH/%22forest_fire%22
 
 Fire kaggle 1 : https://www.kaggle.com/datasets/phylake1337/fire-dataset?resource=download
